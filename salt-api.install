@@ -1,0 +1,65 @@
+salt-api安装和使用
+https://docs.saltstack.com/en/latest/ref/netapi/all/salt.netapi.rest_cherrypy.html#jobs
+http://pengyao.org/salt-api-deploy-and-use.html
+
+yum install salt-api -y
+
+pip install salt-api 安装最新版本
+
+salt-api --version report
+
+创建用于salt-api的用户
+useradd -M -s /sbin/nologin saltapi
+echo "passwd" | passwd saltapi —stdin
+
+创建验证证书
+
+cd  /etc/pki/tls/certs
+# 生成自签名证书, 过程中需要输入key密码及RDNs
+make testcert
+cd /etc/pki/tls/private/
+# 解密key文件，生成无密码的key文件, 过程中需要输入key密码，该密码为之前生成证书时设置的密码
+openssl rsa -in localhost.key -out localhost_nopass.key
+
+创建相关的配置文件
+
+配置eauth, /etc/salt/master.d/eauth.conf
+external_auth:
+  pam:
+    saltapi:
+      - .*
+      - '@wheel'
+      - '@runner'
+配置Salt-API, /etc/salt/master.d/api.conf
+rest_cherrypy:
+  port: 8000
+  ssl_crt: /etc/pki/tls/certs/localhost.crt
+  ssl_key: /etc/pki/tls/private/localhost_nopass.key
+  
+systemctl start salt-api 
+
+启动失败的原因是ssl配置的时候证书不存在或者证书错误，另外就是配置文件要严格按照yaml的格式写
+
+Login 获取token
+最好用json格式的返回：
+curl  -k https://192.168.36.152:7878/login -H "Accept: application/json" -d username='saltapi' -d password='saltapi' -d eauth='pam'
+
+获取token 401 错误，检查配置文件eauth.conf格式，另外需要尝试重启salt-master进程。
+
+使用login获取回来的token执行salt命令：
+curl  -k https://192.168.36.152:7878/ -H "Accept: application/json" -H "X-Auth-Token: 5f38d4c5f7ea190a7ba534b8368398a10689a78e" -d client='local' -d tgt='*' -d fun='test.ping'
+分组用的还是那个expr_form
+
+使用token查询jid执行情况：
+curl -k https://192.168.36.152:7878/jobs/20171225095458506255 -H "Accept: application/json" -H "X-Auth-Token: 5f38d4c5f7ea190a7ba534b8368398a10689a78e"
+curl -k https://192.168.36.152:7878/jobs/20171225095458506255 -H "Accept: application/x-yaml" -H "X-Auth-Token: 5f38d4c5f7ea190a7ba534b8368398a10689a78e"
+
+以上。
+更多用法参考上文链接。
+
+附：
+http://blog.csdn.net/zeroso/article/details/53268621?utm_source=itdadao&utm_medium=referral
+使用postman工具进行ajax post 和 restful post
+1.选择post 填入正常的请求地址
+2.修改Body，默认的是form-data 选择成x-www-form-urlencoded
+3.在Body下的key--value 填写请求参数  username,password,eauth  而不是在Params添加
