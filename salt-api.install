@@ -1,6 +1,5 @@
 salt-api安装和使用
 https://docs.saltstack.com/en/latest/ref/netapi/all/salt.netapi.rest_cherrypy.html#jobs
-http://pengyao.org/salt-api-deploy-and-use.html
 
 yum install salt-api -y
 
@@ -58,7 +57,6 @@ curl -k https://192.168.36.152:7878/jobs/20171225095458506255 -H "Accept: applic
 更多用法参考上文链接。
 
 附：
-http://blog.csdn.net/zeroso/article/details/53268621?utm_source=itdadao&utm_medium=referral
 使用postman工具进行ajax post 和 restful post
 1.选择post 填入正常的请求地址
 2.修改Body，默认的是form-data 选择成x-www-form-urlencoded
